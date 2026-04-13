@@ -24,9 +24,9 @@ import { CommonModule } from '@angular/common';
           </div>
 
           <div class="flex items-center gap-6">
-            <div class="relative cursor-pointer">
+            <div routerLink="/cart" class="relative cursor-pointer hover:scale-110 transition-transform">
               <span class="text-2xl">🛒</span>
-              <span *ngIf="(cart$ | async)?.length as count" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full h-5 w-5 flex items-center justify-center text-xs">
+              <span *ngIf="(cart$ | async)?.length as count" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full h-5 w-5 flex items-center justify-center text-xs font-bold shadow-sm">
                 {{count}}
               </span>
             </div>

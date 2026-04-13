@@ -8,4 +8,5 @@ export interface Book {
 export interface BookDetails extends Book {
   description: string;
   publishYear: string;
+  subjects?: string[]; 
 }
