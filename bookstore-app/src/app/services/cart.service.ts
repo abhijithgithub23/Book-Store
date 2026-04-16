@@ -1,28 +1,31 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
+import { ToastService } from './toast.service';
 
 @Injectable({ providedIn: 'root' })
 export class CartService {
   private cartItems = new BehaviorSubject<any[]>([]);
   cart$ = this.cartItems.asObservable();
+  
+  private toastService = inject(ToastService); // Inject the new service
 
   addToCart(book: any) {
     const currentItems = this.cartItems.getValue();
     
-    // Check if the book is already in the cart
     const exists = currentItems.find(item => item.id === book.id);
     if (exists) {
-      alert(`"${book.title}" is already in your cart!`);
+      this.toastService.show(`"${book.title}" is already in your cart!`, 'info');
       return;
     }
 
     this.cartItems.next([...currentItems, book]);
-    alert(`"${book.title}" added to cart!`);
+    this.toastService.show(`"${book.title}" added to cart!`, 'success');
   }
 
   removeFromCart(bookId: string) {
     const currentItems = this.cartItems.getValue();
     const updatedItems = currentItems.filter(item => item.id !== bookId);
     this.cartItems.next(updatedItems);
+    this.toastService.show('Book removed from cart', 'info');
   }
 }

@@ -8,12 +8,10 @@ export class ApiService {
   private http = inject(HttpClient);
 
   getBooksByGenre(genre: string): Observable<Book[]> {
-    return this.http.get<any>(`https://openlibrary.org/subjects/${genre.toLowerCase()}.json?limit=40`)
+    return this.http.get<any>(`https://openlibrary.org/subjects/${genre.toLowerCase()}.json?limit=20`)
       .pipe(
         map(response => {
-          console.log('[ApiService] Genre Raw Response:', response);
           if (!response || !Array.isArray(response.works)) return [];
-          
           return response.works.map((work: any) => ({
             id: work.key ? work.key.replace('/works/', '') : '',
             title: work.title || 'Unknown Title',
@@ -33,9 +31,7 @@ export class ApiService {
     return this.http.get<any>(`https://openlibrary.org/search.json?q=${formattedQuery}&limit=20`)
       .pipe(
         map(response => {
-          console.log('[ApiService] Search Raw Response:', response);
           if (!response || !Array.isArray(response.docs)) return [];
-
           return response.docs.map((doc: any) => ({
             id: doc.key ? doc.key.replace('/works/', '') : '',
             title: doc.title || 'Unknown Title',
@@ -54,22 +50,41 @@ export class ApiService {
     return this.http.get<any>(`https://openlibrary.org/works/${id}.json`)
       .pipe(
         map(data => {
-           console.log('[ApiService] Details Raw Response:', data);
-           
-           // Extract year from first_publish_date OR fallback to created date string
-           let year = data.first_publish_date || 'Unknown';
-           if (year === 'Unknown' && data.created && data.created.value) {
-             year = data.created.value.substring(0, 4); // grabs '2020' from '2020-08-16...'
+           // 1. Handle missing publish year gracefully
+           let year = data.first_publish_date || '';
+           if (!year && data.created && data.created.value) {
+             year = data.created.value.substring(0, 4);
+           }
+
+           // 2. Safely extract description (might be a string, an object, or missing entirely)
+           let rawDesc = '';
+           if (data.description) {
+             rawDesc = typeof data.description === 'string' ? data.description : data.description.value;
+           }
+
+           // 3. Convert Markdown to HTML
+           let htmlDesc = '';
+           if (rawDesc) {
+              htmlDesc = rawDesc
+                .replace(/^### (.*$)/gim, '<h3 class="text-xl font-bold mt-6 mb-2 text-gray-800">$1</h3>') // h3 tags
+                .replace(/^## (.*$)/gim, '<h2 class="text-2xl font-bold mt-6 mb-2 text-gray-800">$1</h2>') // h2 tags
+                .replace(/^# (.*$)/gim, '<h1 class="text-3xl font-bold mt-6 mb-2 text-gray-800">$1</h1>') // h1 tags
+                .replace(/\*\*\*(.*?)\*\*\*/gim, '<strong><em>$1</em></strong>') // Bold + Italic
+                .replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>') // Bold
+                .replace(/\*(.*?)\*/gim, '<em>$1</em>') // Italic
+                .replace(/\[(.*?)\]\((.*?)\)/gim, '<a href="$2" class="text-indigo-600 underline hover:text-indigo-800" target="_blank">$1</a>') // Links
+                .replace(/\r\n/g, '<br>') // Line breaks
+                .replace(/\n/g, '<br>'); // Line breaks
            }
 
            return {
             id: id,
             title: data.title || 'Unknown Title',
-            author: 'Author name not provided in this endpoint', 
+            author: '', // Omitted since this endpoint only returns keys, not names
             coverUrl: (data.covers && data.covers.length > 0) ? `https://covers.openlibrary.org/b/id/${data.covers[0]}-L.jpg` : 'https://placehold.co/300x400?text=No+Cover',
-            description: typeof data.description === 'string' ? data.description : (data.description?.value || 'No detailed description available for this edition.'),
+            description: htmlDesc,
             publishYear: year,
-            subjects: data.subjects ? data.subjects.slice(0, 10) : [] // Grab up to 10 subjects
+            subjects: data.subjects ? data.subjects.slice(0, 10) : [] // Max 10 subjects
           };
         }),
         catchError(error => {
