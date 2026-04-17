@@ -63,7 +63,7 @@ export class NavbarComponent {
   cartService = inject(CartService);
   cart$ = this.cartService.cart$;
 
-  genres = ['fiction', 'fantasy', 'romance', 'science_fiction', 'thriller', 'mystery'];
+  genres = ['fiction', 'fantasy', 'romance', 'science_fiction', 'thriller', 'mystery', 'adventure'];
 
   onSearch(inputElement: HTMLInputElement) {
     const term = inputElement.value;

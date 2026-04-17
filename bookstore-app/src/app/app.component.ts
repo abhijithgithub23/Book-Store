@@ -15,4 +15,4 @@ import { ToastComponent } from './components/toast/toast.component'; // Import t
     <app-toast></app-toast> 
   `
 })
-export class AppComponent {}
+export class AppComponent {}   

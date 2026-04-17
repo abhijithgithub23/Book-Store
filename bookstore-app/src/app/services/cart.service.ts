@@ -7,8 +7,7 @@ export class CartService {
   private cartItems = new BehaviorSubject<any[]>([]);
   cart$ = this.cartItems.asObservable();
   
-  private toastService = inject(ToastService); // Inject the new service
-
+  private toastService = inject(ToastService);
   addToCart(book: any) {
     const currentItems = this.cartItems.getValue();
     

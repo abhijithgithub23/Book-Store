@@ -10,4 +10,4 @@ export const routes: Routes = [
   { path: 'book/:id', component: BookDetailComponent },
   { path: 'cart', component: CartComponent }, 
   { path: '**', redirectTo: '' }
-];
+];  

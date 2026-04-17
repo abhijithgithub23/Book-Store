@@ -80,7 +80,7 @@ export class ApiService {
            return {
             id: id,
             title: data.title || 'Unknown Title',
-            author: '', // Omitted since this endpoint only returns keys, not names
+            author: '', 
             coverUrl: (data.covers && data.covers.length > 0) ? `https://covers.openlibrary.org/b/id/${data.covers[0]}-L.jpg` : 'https://placehold.co/300x400?text=No+Cover',
             description: htmlDesc,
             publishYear: year,
