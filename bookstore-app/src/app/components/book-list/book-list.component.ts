@@ -5,7 +5,6 @@ import { ApiService } from '../../services/api.service';
 import { Book } from '../../models/book.model';
 import { Observable, switchMap, map, startWith, catchError, of } from 'rxjs';
 
-// 1. Define exactly what our UI needs to know
 interface PageState {
   loading: boolean;
   books: Book[];
@@ -49,16 +48,14 @@ export class BookListComponent {
   private route = inject(ActivatedRoute);
   private api = inject(ApiService);
   
-  pageTitle = 'Best Sellers';
+  pageTitle = '';
 
-  // 3. Create a single stream of truth for the entire component
   state$: Observable<PageState> = this.route.paramMap.pipe(
     switchMap(params => {
       const genre = params.get('genre');
       const query = params.get('query');
       let apiCall$: Observable<Book[]>;
 
-      // Determine which API call to make
       if (genre) {
         this.pageTitle = `${genre.replace('_', ' ')} Books`;
         apiCall$ = this.api.getBooksByGenre(genre);
@@ -70,13 +67,12 @@ export class BookListComponent {
         apiCall$ = this.api.getBooksByGenre('popular');
       }
 
-      // 4. Transform the API data into our PageState object
       return apiCall$.pipe(
-        map(books => ({ loading: false, books: books })), // Emits when data arrives
-        startWith({ loading: true, books: [] }),          // Emits INSTANTLY on route change
+        map(books => ({ loading: false, books: books })), 
+        startWith({ loading: true, books: [] }),          
         catchError(err => {
           console.error('[BookList] Error:', err);
-          return of({ loading: false, books: [] });       // Emits if API crashes
+          return of({ loading: false, books: [] });       
         })
       );
     })

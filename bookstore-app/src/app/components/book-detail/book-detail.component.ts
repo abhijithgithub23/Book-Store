@@ -6,7 +6,6 @@ import { CartService } from '../../services/cart.service';
 import { BookDetails } from '../../models/book.model';
 import { Observable, switchMap, map, startWith, catchError, of, filter } from 'rxjs';
 
-// 1. Define our specific state for this page
 interface DetailPageState {
   loading: boolean;
   book: BookDetails | null;
@@ -74,21 +73,19 @@ export class BookDetailComponent {
   private api = inject(ApiService);
   private cartService = inject(CartService);
   
-  // 3. Single stream of truth for the entire component
   state$: Observable<DetailPageState> = this.route.paramMap.pipe(
     map(params => params.get('id')),
-    filter((id): id is string => !!id), // Ensure the ID exists before making the call
+    filter((id): id is string => !!id),
     switchMap(id => this.api.getBookDetails(id).pipe(
-      map(book => ({ loading: false, book: book })), // Data arrived successfully
-      startWith({ loading: true, book: null }),      // Instant loading state
+      map(book => ({ loading: false, book: book })), 
+      startWith({ loading: true, book: null }),      
       catchError(err => {
         console.error('[BookDetail] Error:', err);
-        return of({ loading: false, book: null });   // API failed, show error state
+        return of({ loading: false, book: null });  
       })
     ))
   );
 
-  // We now accept the book directly from the HTML template
   addToCart(book: BookDetails) {
     this.cartService.addToCart(book);
   }

@@ -1,5 +1,5 @@
 export interface Book {
-  id: string; // The Work ID (e.g., OL12345W)
+  id: string; 
   title: string;
   author: string;
   coverUrl: string;
