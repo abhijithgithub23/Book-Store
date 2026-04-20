@@ -53,12 +53,26 @@ interface DetailPageState {
             </div>
             
             <div class="mt-auto pt-6 border-t flex items-center justify-between">
-               <button (click)="addToCart(book)" class="w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition-colors text-lg flex items-center justify-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
-                </svg>
-                Add to Cart
-              </button>
+              
+              <ng-container *ngIf="cart$ | async as cartItems">
+                <button 
+                  (click)="addToCart(book)" 
+                  [disabled]="isInCart(book.id, cartItems)"
+                  [ngClass]="isInCart(book.id, cartItems) ? 'bg-green-600 cursor-default opacity-90' : 'bg-indigo-600 hover:bg-indigo-700'"
+                  class="w-full md:w-auto text-white font-bold py-3 px-8 rounded-lg shadow-lg transition-colors text-lg flex items-center justify-center gap-2">
+                  
+                  <svg *ngIf="!isInCart(book.id, cartItems)" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
+                  </svg>
+
+                  <svg *ngIf="isInCart(book.id, cartItems)" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                  </svg>
+
+                  {{ isInCart(book.id, cartItems) ? 'Added To Cart' : 'Add to Cart' }}
+                </button>
+              </ng-container>
+
               <a routerLink="/" class="text-gray-500 hover:text-gray-800 ml-4 hidden md:block transition-colors">← Keep Shopping</a>
             </div>
           </div>
@@ -73,6 +87,9 @@ export class BookDetailComponent {
   private api = inject(ApiService);
   private cartService = inject(CartService);
   
+  // Expose the global cart observable to the template
+  cart$ = this.cartService.cart$;
+
   state$: Observable<DetailPageState> = this.route.paramMap.pipe(
     map(params => params.get('id')),
     filter((id): id is string => !!id),
@@ -85,6 +102,12 @@ export class BookDetailComponent {
       })
     ))
   );
+
+  // Helper function to check if the current book is already in the cart array
+  isInCart(bookId: string, cartItems: any[] | null): boolean {
+    if (!cartItems) return false;
+    return cartItems.some(item => item.id === bookId);
+  }
 
   addToCart(book: BookDetails) {
     this.cartService.addToCart(book);

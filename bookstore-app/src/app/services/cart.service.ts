@@ -4,7 +4,7 @@ import { ToastService } from './toast.service';
 
 @Injectable({ providedIn: 'root' })
 export class CartService {
-  private cartItems = new BehaviorSubject<any[]>([]);
+  private cartItems = new BehaviorSubject<any[]>([]); // REMEMBERS LATEST VALUE ,  auto updates ui
   cart$ = this.cartItems.asObservable();
   
   private toastService = inject(ToastService);

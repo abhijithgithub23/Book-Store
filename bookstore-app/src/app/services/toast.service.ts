@@ -9,7 +9,7 @@ export interface ToastMessage {
 @Injectable({ providedIn: 'root' })
 export class ToastService {
   private toastSubject = new BehaviorSubject<ToastMessage | null>(null);
-  toast$ = this.toastSubject.asObservable();
+  toast$ = this.toastSubject.asObservable(); //read only
 
   show(message: string, type: 'success' | 'info' | 'error' = 'success') {
     this.toastSubject.next({ message, type });
