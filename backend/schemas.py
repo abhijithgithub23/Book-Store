@@ -38,3 +38,14 @@ class CartItemResponse(BaseModel):
     book: BookSchema
     class Config:
         from_attributes = True
+
+
+# pagination
+class PaginatedBooksResponse(BaseModel):
+    total: int
+    page: int
+    size: int
+    items: List[BookSchema]
+    
+    class Config:
+        from_attributes = True

@@ -3,6 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from typing import List
+from sqlalchemy import or_, desc # Add this to your SQLAlchemy imports at the top!
+
 
 import models
 import schemas
@@ -51,18 +53,42 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
 def read_users_me(current_user: models.User = Depends(auth.get_current_user)):
     return current_user
 
+
+
 # --- BOOK ROUTES ---
 
-@app.get("/books", response_model=List[schemas.BookSchema])
-def get_books(genre: str = None, q: str = None, db: Session = Depends(get_db)):
+@app.get("/books", response_model=schemas.PaginatedBooksResponse)
+def get_books(genre: str = None, q: str = None, page: int = 1, size: int = 20, db: Session = Depends(get_db)):
     query = db.query(models.Book)
-    if genre:
-        if genre.lower() == 'popular':
-            return query.limit(20).all() # Just return first 20 for 'popular'
+    
+    # 1. Filter by Genre
+    if genre and genre.lower() != 'popular':
         query = query.filter(models.Book.genre.ilike(f"%{genre}%"))
+        
+    # 2. Filter by Search Query (Title OR Author)
     if q:
-        query = query.filter(models.Book.title.ilike(f"%{q}%"))
-    return query.limit(20).all()
+        query = query.filter(
+            or_(
+                models.Book.title.ilike(f"%{q}%"),
+                models.Book.author_name.ilike(f"%{q}%")
+            )
+        )
+        
+    # 3. Sort by Publish Year Descending (Latest on top)
+    query = query.order_by(desc(models.Book.publish_year))
+    
+    # 4. Pagination Math
+    total_books = query.count()
+    offset = (page - 1) * size
+    books = query.offset(offset).limit(size).all()
+    
+    # Return the new Paginated Schema
+    return {
+        "total": total_books,
+        "page": page,
+        "size": size,
+        "items": books
+    }
 
 @app.get("/books/{book_id}", response_model=schemas.BookSchema)
 def get_book_details(book_id: str, db: Session = Depends(get_db)):
