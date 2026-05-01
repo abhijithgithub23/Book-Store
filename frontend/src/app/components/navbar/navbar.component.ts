@@ -40,10 +40,17 @@ import { CommonModule } from '@angular/common';
 
             <ng-container *ngIf="user$ | async as user; else loggedOut">
               <div class="flex items-center gap-4">
-                <div class="hidden md:block text-sm font-medium text-gray-700">
-                  Hi, {{ user.full_name.split(' ')[0] }}
+                
+                <!-- NEW: Admin Add Book Button -->
+                <a *ngIf="user.is_admin" routerLink="/add-book" class="hidden sm:flex bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-md text-sm font-bold hover:bg-indigo-200 transition-colors items-center gap-1 cursor-pointer">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+                  Add Book
+                </a>
+
+                <div class="hidden md:block text-sm font-medium text-gray-700 border-l pl-4 border-gray-200">
+                  Hi, {{ user.full_name ? user.full_name.split(' ')[0] : 'User' }}
                 </div>
-                <button (click)="logout()" class="text-sm font-semibold text-red-500 hover:text-red-700 transition-colors">
+                <button (click)="logout()" class="text-sm font-semibold text-red-500 hover:text-red-700 transition-colors cursor-pointer">
                   Logout
                 </button>
               </div>
@@ -76,7 +83,7 @@ export class NavbarComponent {
   cartService = inject(CartService);
   
   cart$ = this.cartService.cart$;
-  user$ = this.authService.currentUser$; // Stream of the logged-in user
+  user$ = this.authService.currentUser$; 
 
   genres = ['fiction', 'fantasy', 'romance', 'science_fiction', 'thriller', 'mystery'];
 

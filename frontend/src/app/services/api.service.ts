@@ -1,14 +1,13 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, map, shareReplay } from 'rxjs';
+import { Observable, map, shareReplay, tap } from 'rxjs';
 import { Book, BookDetails } from '../models/book.model';
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
   private http = inject(HttpClient);
-  private apiUrl = 'http://127.0.0.1:8000';
-
-  // 1. Create maps to store our cached Observables
+  private apiUrl = 'http://localhost:8000';
+  
   private listCache = new Map<string, Observable<any>>();
   private detailsCache = new Map<string, Observable<BookDetails>>();
 
@@ -26,28 +25,38 @@ export class ApiService {
     };
   }
 
+  // Helper to map frontend camelCase back to database snake_case for Admin updates
+  private mapToDbBook(book: any) {
+    return {
+      id: book.id,
+      title: book.title,
+      genre: book.genre,
+      publish_year: book.publishYear,
+      cover_url: book.coverUrl,
+      description: book.description,
+      author_name: book.author,
+      author_bio: book.authorBio,
+      subjects: typeof book.subjects === 'string' ? book.subjects.split(',').map((s: string) => s.trim()) : book.subjects
+    };
+  }
+
   getBooksByGenre(genre: string, page: number = 1): Observable<any> {
     const cacheKey = `genre-${genre}-page-${page}`;
-    
-    // 2. If we haven't made this specific request yet, make it and cache it
     if (!this.listCache.has(cacheKey)) {
       const request$ = this.http.get<any>(`${this.apiUrl}/books?genre=${genre}&page=${page}`).pipe(
         map(response => ({
           ...response,
           items: response.items.map((book: any) => this.mapBook(book))
         })),
-        shareReplay(1) // 3. MAGIC: Cache the most recent emission from this stream
+        shareReplay(1)
       );
       this.listCache.set(cacheKey, request$);
     }
-    
-    // 4. Return the cached Observable
     return this.listCache.get(cacheKey)!;
   }
 
   searchBooks(query: string, page: number = 1): Observable<any> {
     const cacheKey = `search-${query}-page-${page}`;
-    
     if (!this.listCache.has(cacheKey)) {
       const request$ = this.http.get<any>(`${this.apiUrl}/books?q=${query}&page=${page}`).pipe(
         map(response => ({
@@ -58,14 +67,11 @@ export class ApiService {
       );
       this.listCache.set(cacheKey, request$);
     }
-    
     return this.listCache.get(cacheKey)!;
   }
 
   getBookDetails(id: string): Observable<BookDetails> {
     const cacheKey = `detail-${id}`;
-    
-    // We can also cache individual book details so they load instantly the second time!
     if (!this.detailsCache.has(cacheKey)) {
       const request$ = this.http.get<any>(`${this.apiUrl}/books/${id}`).pipe(
         map(book => this.mapBook(book)),
@@ -73,7 +79,30 @@ export class ApiService {
       );
       this.detailsCache.set(cacheKey, request$);
     }
-    
     return this.detailsCache.get(cacheKey)!;
+  }
+
+  // --- ADMIN ACTIONS ---
+  addBook(book: any) {
+    return this.http.post(`${this.apiUrl}/books`, this.mapToDbBook(book), { withCredentials: true }).pipe(
+      tap(() => this.clearCache())
+    );
+  }
+
+  updateBook(id: string, book: any) {
+    return this.http.put(`${this.apiUrl}/books/${id}`, this.mapToDbBook(book), { withCredentials: true }).pipe(
+      tap(() => this.clearCache())
+    );
+  }
+
+  deleteBook(id: string) {
+    return this.http.delete(`${this.apiUrl}/books/${id}`, { withCredentials: true }).pipe(
+      tap(() => this.clearCache())
+    );
+  }
+
+  private clearCache() {
+    this.listCache.clear();
+    this.detailsCache.clear();
   }
 }

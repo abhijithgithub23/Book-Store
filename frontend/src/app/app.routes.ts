@@ -4,6 +4,8 @@ import { BookDetailComponent } from './components/book-detail/book-detail.compon
 import { CartComponent } from './components/cart/cart.component';
 import { LoginComponent } from './components/login/login.component';
 import { SignupComponent } from './components/signup/signup.component';
+// THE FIX: You must import the component here!
+import { BookFormComponent } from './components/book-form/book-form.component'; 
 
 export const routes: Routes = [
   { path: '', component: BookListComponent },
@@ -13,5 +15,9 @@ export const routes: Routes = [
   { path: 'cart', component: CartComponent },
   { path: 'login', component: LoginComponent },
   { path: 'signup', component: SignupComponent },
+  
+  { path: 'add-book', component: BookFormComponent },
+  { path: 'edit-book/:id', component: BookFormComponent },
+  
   { path: '**', redirectTo: '' }
 ];

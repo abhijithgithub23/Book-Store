@@ -1,8 +1,9 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink, Router } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { CartService } from '../../services/cart.service';
+import { AuthService } from '../../services/auth.service';
 import { BookDetails } from '../../models/book.model';
 import { Observable, switchMap, map, startWith, catchError, of, filter } from 'rxjs';
 
@@ -17,7 +18,6 @@ interface DetailPageState {
   imports: [CommonModule, RouterLink],
   template: `
     <div class="max-w-5xl mx-auto px-4 pt-36 pb-10">
-      
       <ng-container *ngIf="state$ | async as state">
 
         <div *ngIf="state.loading" class="text-center py-10">
@@ -30,13 +30,19 @@ interface DetailPageState {
         </div>
         
         <div *ngIf="!state.loading && state.book as book" class="bg-white rounded-xl shadow-lg p-8 flex flex-col md:flex-row gap-8">
-          
           <div class="md:w-1/3 shrink-0">
             <img [src]="book.coverUrl" [alt]="book.title" class="w-full rounded-lg shadow-md object-cover border border-gray-100">
           </div>
           
           <div class="md:w-2/3 flex flex-col">
             
+            <!-- Admin Controls Banner -->
+            <div *ngIf="(user$ | async)?.is_admin" class="flex gap-3 mb-6 bg-red-50 p-4 rounded-xl border border-red-100 shadow-sm items-center">
+              <span class="text-sm font-extrabold text-red-800 mr-auto uppercase tracking-wide">⚙️ Admin Access</span>
+              <a [routerLink]="['/edit-book', book.id]" class="bg-yellow-500 hover:bg-yellow-600 text-white px-5 py-2 rounded-lg font-bold text-sm transition-colors shadow-sm">Edit</a>
+              <button (click)="deleteBook(book.id)" class="bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-lg font-bold text-sm transition-colors shadow-sm cursor-pointer">Delete</button>
+            </div>
+
             <h1 class="text-4xl font-extrabold text-gray-900 mb-1 leading-tight">{{ book.title }}</h1>
             <p class="text-xl text-gray-600 mb-4 font-medium">by <span class="text-indigo-600">{{ book.author }}</span></p>
             
@@ -66,41 +72,32 @@ interface DetailPageState {
             </div>
             
             <div class="mt-auto pt-6 border-t border-gray-200 flex items-center justify-between">
-              
               <ng-container *ngIf="cart$ | async as cartItems">
                 <button 
                   (click)="addToCart(book)" 
                   [disabled]="isInCart(book.id, cartItems)"
-                  [ngClass]="isInCart(book.id, cartItems) ? 'bg-green-600 cursor-default opacity-90' : 'bg-indigo-600 hover:bg-indigo-700'"
+                  [ngClass]="isInCart(book.id, cartItems) ? 'bg-green-600 cursor-default opacity-90' : 'bg-indigo-600 hover:bg-indigo-700 cursor-pointer'"
                   class="w-full md:w-auto text-white font-bold py-3 px-8 rounded-lg shadow transition-colors text-lg flex items-center justify-center gap-2">
-                  
-                  <svg *ngIf="!isInCart(book.id, cartItems)" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
-                  </svg>
-
-                  <svg *ngIf="isInCart(book.id, cartItems)" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                  </svg>
-
-                  {{ isInCart(book.id, cartItems) ? 'Added To Cart' : 'Add to Cart' }}
+                  {{ isInCart(book.id, cartItems) ? '✓ Added To Cart' : 'Add to Cart' }}
                 </button>
               </ng-container>
-
               <a routerLink="/" class="text-gray-500 hover:text-gray-900 ml-4 hidden md:block font-medium transition-colors">← Keep Shopping</a>
             </div>
           </div>
         </div>
-
       </ng-container>
     </div>
   `
 })
 export class BookDetailComponent {
   private route = inject(ActivatedRoute);
+  private router = inject(Router);
   private api = inject(ApiService);
   private cartService = inject(CartService);
+  private authService = inject(AuthService);
   
   cart$ = this.cartService.cart$;
+  user$ = this.authService.currentUser$; 
 
   state$: Observable<DetailPageState> = this.route.paramMap.pipe(
     map(params => params.get('id')),
@@ -117,10 +114,34 @@ export class BookDetailComponent {
 
   isInCart(bookId: string, cartItems: any[] | null): boolean {
     if (!cartItems) return false;
-    return cartItems.some(item => item.id === bookId);
+    // CRITICAL FIX: Checking item.book.id instead of item.id
+    return cartItems.some(item => item.book && item.book.id === bookId);
   }
 
-  addToCart(book: BookDetails) {
-    this.cartService.addToCart(book);
+  addToCart(book: any) {
+    this.cartService.addToCart(book.id).subscribe({
+      next: () => {
+        // We removed the alert here because the UI button visually updating to "✓ Added To Cart" is a much better user experience!
+      },
+      error: (err) => {
+        console.error('Failed to add to cart:', err);
+        alert(err.error?.detail || 'Failed to add item to cart.');
+      }
+    });
+  }
+
+  deleteBook(id: string) {
+    if (confirm('Are you sure you want to permanently delete this book from the database? This action cannot be undone.')) {
+      this.api.deleteBook(id).subscribe({
+        next: () => {
+          alert('Book deleted successfully!');
+          this.router.navigate(['/']);
+        },
+        error: (err: any) => { 
+          console.error(err);
+          alert('Failed to delete book.');
+        }
+      });
+    }
   }
 }

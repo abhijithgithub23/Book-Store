@@ -1,85 +1,66 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, tap } from 'rxjs';
-import { ToastService } from './toast.service';
-import { AuthService } from './auth.service';
+import { BehaviorSubject, tap, catchError, of } from 'rxjs';
+import { AuthService } from './auth.service'; // <-- Import AuthService
 
 @Injectable({ providedIn: 'root' })
 export class CartService {
   private http = inject(HttpClient);
-  private toastService = inject(ToastService);
-  private authService = inject(AuthService);
-  private apiUrl = 'http://127.0.0.1:8000/cart';
+  private authService = inject(AuthService); // <-- Inject it
+  
+  private apiUrl = 'http://localhost:8000';
 
-  private cartItems = new BehaviorSubject<any[]>([]);
-  cart$ = this.cartItems.asObservable();
+  private cartSubject = new BehaviorSubject<any[]>([]);
+  cart$ = this.cartSubject.asObservable();
 
   constructor() {
-    // Automatically load the cart when a user logs in
+    // THE FIX: The Cart Service now actively listens to the Auth Service!
     this.authService.currentUser$.subscribe(user => {
       if (user) {
-        this.fetchCartFromDB().subscribe();
+        // User logged in (or page refreshed and session restored): Fetch their cart!
+        this.getCart().subscribe({
+          error: (err) => console.error('Failed to fetch cart on login', err)
+        });
       } else {
-        this.cartItems.next([]); // Clear cart if logged out
+        // User logged out: Instantly wipe the cart from memory!
+        this.clearCart();
       }
     });
   }
 
-  private fetchCartFromDB() {
-    return this.http.get<any[]>(this.apiUrl).pipe(
-      tap(dbItems => {
-        // The backend returns { id, book: { ... } }, we just want the book array
-        const books = dbItems.map(item => ({
-          id: item.book.id,
-          title: item.book.title,
-          author: item.book.author_name,
-          coverUrl: item.book.cover_url
-        }));
-        this.cartItems.next(books);
+  getCart() {
+    return this.http.get<any[]>(`${this.apiUrl}/cart`, { withCredentials: true }).pipe(
+      tap(items => {
+        this.cartSubject.next(items);
+      }),
+      catchError(() => {
+        // If the fetch fails (e.g., token expired), wipe the cart to be safe
+        this.clearCart();
+        return of([]);
       })
     );
   }
 
-  addToCart(book: any) {
-    // 1. Check if logged in
-    if (!this.authService.getToken()) {
-      this.toastService.show('Please log in to add items to your cart', 'error');
-      return;
-    }
-
-    const currentItems = this.cartItems.getValue();
-    if (currentItems.find(item => item.id === book.id)) {
-      this.toastService.show(`"${book.title}" is already in your cart!`, 'info');
-      return;
-    }
-
-    // 2. Optimistic UI update (update screen instantly)
-    this.cartItems.next([...currentItems, book]);
-
-    // 3. Save to database
-    this.http.post(`${this.apiUrl}/${book.id}`, {}).subscribe({
-      next: () => this.toastService.show(`"${book.title}" added to cart!`, 'success'),
-      error: () => {
-        this.cartItems.next(currentItems); // Revert UI if DB fails
-        this.toastService.show('Failed to add to cart', 'error');
-      }
-    });
+  addToCart(bookId: string) {
+    return this.http.post(`${this.apiUrl}/cart/${bookId}`, {}, { withCredentials: true }).pipe(
+      tap(() => {
+        // Refresh the cart silently in the background
+        this.getCart().subscribe();
+      })
+    );
   }
 
   removeFromCart(bookId: string) {
-    const currentItems = this.cartItems.getValue();
-    const updatedItems = currentItems.filter(item => item.id !== bookId);
-    
-    // Optimistic UI update
-    this.cartItems.next(updatedItems);
+    return this.http.delete(`${this.apiUrl}/cart/${bookId}`, { withCredentials: true }).pipe(
+      tap(() => {
+        // Refresh the cart silently in the background
+        this.getCart().subscribe();
+      })
+    );
+  }
 
-    // Remove from database
-    this.http.delete(`${this.apiUrl}/${bookId}`).subscribe({
-      next: () => this.toastService.show('Book removed from cart', 'info'),
-      error: () => {
-        this.cartItems.next(currentItems); // Revert UI if DB fails
-        this.toastService.show('Failed to remove item', 'error');
-      }
-    });
+  clearCart() {
+    // Instantly empties the array, triggering the UI to show the "Cart is empty" message
+    this.cartSubject.next([]);
   }
 }
