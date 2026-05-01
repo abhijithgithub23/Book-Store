@@ -1,4 +1,5 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { BehaviorSubject, tap, catchError, of, switchMap, throwError, Observable } from 'rxjs';
 import { Router } from '@angular/router';
@@ -8,42 +9,60 @@ import { User, TokenResponse } from '../models/auth.model';
 export class AuthService {
   private http = inject(HttpClient);
   private router = inject(Router);
+  private platformId = inject(PLATFORM_ID); 
   
-  // Make sure this matches your backend URL. NO PROXIES.
-  private apiUrl = 'http://localhost:8000'; 
+  private apiUrl = '/api'; 
 
   private accessToken: string | null = null;
   private currentUserSubject = new BehaviorSubject<User | null>(null);
   currentUser$ = this.currentUserSubject.asObservable();
 
-  // THE FIX: This tracks if the initial page load refresh check is done
   private isInitialized = new BehaviorSubject<boolean>(false);
   isInitialized$ = this.isInitialized.asObservable();
 
   constructor() {
-    this.bootUpSession();
+    console.log('[AUTH TRACER] 1. AuthService Constructor Fired!');
+    
+    if (isPlatformBrowser(this.platformId)) {
+      console.log('[AUTH TRACER] 2. Running in Browser! Booting session...');
+      this.bootUpSession();
+    } else {
+      console.log('[AUTH TRACER] 2. Running on Node Server (SSR). Skipping network call.');
+      this.isInitialized.next(true);
+    }
   }
 
-  // YOUR LOGIC: On refresh, send cookie to backend to get a new access token
   private bootUpSession() {
+    console.log('[AUTH TRACER] 3. Sending POST request to /api/refresh...');
+    
     this.http.post<TokenResponse>(`${this.apiUrl}/refresh`, {}, { withCredentials: true }).pipe(
-      switchMap((res) => {
-        this.accessToken = res.access_token;
-        // Fetch profile manually here using the new token directly
-        const headers = new HttpHeaders().set('Authorization', `Bearer ${this.accessToken}`);
-        return this.http.get<User>(`${this.apiUrl}/profile`, { headers });
-      }),
-      catchError(() => {
-        // If it fails (no cookie), just clear and finish booting
+      catchError((error) => {
+        console.error('[AUTH TRACER ERROR] 4. /refresh call FAILED hard:', error);
         this.clearState();
-        return of(null);
+        this.isInitialized.next(true); 
+        return throwError(() => new Error('Session boot failed'));
       })
-    ).subscribe((user) => {
-      if (user) {
-        this.currentUserSubject.next(user);
+    ).subscribe({
+      next: (res) => {
+        console.log('[AUTH TRACER] 4. /refresh call SUCCESS! We got a token.');
+        this.accessToken = res.access_token;
+        this.isInitialized.next(true); 
+
+        console.log('[AUTH TRACER] 5. Fetching user profile...');
+        this.http.get<User>(`${this.apiUrl}/profile`).subscribe({
+          next: (user) => {
+             console.log('[AUTH TRACER] 6. Profile loaded successfully!');
+            this.currentUserSubject.next(user);
+          },
+          error: (profileErr) => {
+             console.error('[AUTH TRACER ERROR] 6. Profile fetch failed:', profileErr);
+            this.clearState();
+          }
+        });
+      },
+      error: (err) => {
+        console.log('[AUTH TRACER] Boot up finished with no active session');
       }
-      // Signal to the rest of the app that boot sequence is complete
-      this.isInitialized.next(true); 
     });
   }
 
@@ -63,9 +82,7 @@ export class AuthService {
     }).pipe(
       switchMap((res: TokenResponse) => {
         this.accessToken = res.access_token; 
-        return this.http.get<User>(`${this.apiUrl}/profile`, {
-          headers: new HttpHeaders().set('Authorization', `Bearer ${this.accessToken}`)
-        });
+        return this.http.get<User>(`${this.apiUrl}/profile`);
       }),
       tap((user: User) => {
         this.currentUserSubject.next(user);

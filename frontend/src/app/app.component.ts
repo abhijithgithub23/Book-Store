@@ -1,7 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { NavbarComponent } from './components/navbar/navbar.component';
 import { ToastComponent } from './components/toast/toast.component'; 
+import { AuthService } from './services/auth.service'; // Adjust path if needed
 
 @Component({
   selector: 'app-root',
@@ -15,4 +16,10 @@ import { ToastComponent } from './components/toast/toast.component';
     <app-toast></app-toast> 
   `
 })
-export class AppComponent {}   
+export class AppComponent {
+  title = 'Book-Store';
+  
+  // THE FIX: This single line forces Angular to create the service
+  // and run its constructor immediately on every page load/refresh.
+  private authService = inject(AuthService);
+}   
