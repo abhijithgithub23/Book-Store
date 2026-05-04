@@ -5,6 +5,7 @@ import { ApiService } from '../../services/api.service';
 import { CartService } from '../../services/cart.service';
 import { AuthService } from '../../services/auth.service';
 import { ToastService } from '../../services/toast.service';
+import { ConfirmService } from '../../services/confirm.service'; // <-- IMPORTED
 import { BookDetails } from '../../models/book.model';
 import { Observable, switchMap, map, startWith, catchError, of, filter } from 'rxjs';
 
@@ -97,6 +98,7 @@ export class BookDetailComponent {
   private cartService = inject(CartService);
   private authService = inject(AuthService);
   private toastService = inject(ToastService);
+  private confirmService = inject(ConfirmService); // <-- INJECTED
   
   cart$ = this.cartService.cart$;
   user$ = this.authService.currentUser$; 
@@ -122,7 +124,6 @@ export class BookDetailComponent {
   addToCart(book: any) {
     this.cartService.addToCart(book.id).subscribe({
       next: () => {
-        // Added the toast notification here!
         this.toastService.show('Book added to cart!', 'success');
       },
       error: (err) => {
@@ -132,8 +133,16 @@ export class BookDetailComponent {
     });
   }
 
-  deleteBook(id: string) {
-    if (confirm('Are you sure you want to permanently delete this book from the database? This action cannot be undone.')) {
+  // UPDATED: Now uses the custom Confirm Modal
+  async deleteBook(id: string) {
+    const confirmed = await this.confirmService.confirm(
+      'Delete Book',
+      'Are you sure you want to permanently delete this book? This action cannot be undone.',
+      'Yes, Delete',
+      'Cancel'
+    );
+
+    if (confirmed) {
       this.api.deleteBook(id).subscribe({
         next: () => {
           this.toastService.show('Book deleted successfully!', 'success');

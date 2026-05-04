@@ -2,6 +2,7 @@ import { Component, inject } from '@angular/core';
 import { RouterLink, Router } from '@angular/router';
 import { CartService } from '../../services/cart.service';
 import { AuthService } from '../../services/auth.service';
+import { ConfirmService } from '../../services/confirm.service'; // <-- IMPORTED
 import { CommonModule } from '@angular/common';
 
 @Component({
@@ -41,7 +42,6 @@ import { CommonModule } from '@angular/common';
             <ng-container *ngIf="user$ | async as user; else loggedOut">
               <div class="flex items-center gap-4">
                 
-                <!-- NEW: Admin Add Book Button -->
                 <a *ngIf="user.is_admin" routerLink="/add-book" class="hidden sm:flex bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-md text-sm font-bold hover:bg-indigo-200 transition-colors items-center gap-1 cursor-pointer">
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
                   Add Book
@@ -80,6 +80,7 @@ import { CommonModule } from '@angular/common';
 export class NavbarComponent {
   private router = inject(Router);
   private authService = inject(AuthService);
+  private confirmService = inject(ConfirmService); // <-- INJECTED
   cartService = inject(CartService);
   
   cart$ = this.cartService.cart$;
@@ -95,7 +96,17 @@ export class NavbarComponent {
     }
   }
 
-  logout() {
-    this.authService.logout();
+  // UPDATED: Now uses the custom Confirm Modal
+  async logout() {
+    const confirmed = await this.confirmService.confirm(
+      'Log Out', 
+      'Are you sure you want to log out of your account?', 
+      'Log Out', 
+      'Cancel'
+    );
+    
+    if (confirmed) {
+      this.authService.logout();
+    }
   }
 }
