@@ -8,7 +8,7 @@ import { ToastService } from '../../services/toast.service';
   imports: [CommonModule],
   template: `
     <div *ngIf="toast$ | async as toast" 
-         class="fixed bottom-6 right-6 z-100 px-6 py-4 rounded-lg shadow-2xl flex items-center gap-3 text-white transition-all duration-300 animate-fade-in-up"
+         class="fixed top-24 right-6 z-100 px-6 py-4 rounded-lg shadow-2xl flex items-center gap-3 text-white transition-all duration-300 animate-fade-in-down"
          [ngClass]="{
            'bg-green-600': toast.type === 'success',
            'bg-blue-600': toast.type === 'info',
@@ -33,12 +33,12 @@ import { ToastService } from '../../services/toast.service';
     </div>
   `,
   styles: [`
-    @keyframes fadeInUp {
-      from { opacity: 0; transform: translateY(20px); }
+    @keyframes fadeInDown {
+      from { opacity: 0; transform: translateY(-20px); }
       to { opacity: 1; transform: translateY(0); }
     }
-    .animate-fade-in-up {
-      animation: fadeInUp 0.3s ease-out forwards;
+    .animate-fade-in-down {
+      animation: fadeInDown 0.3s ease-out forwards;
     }
   `]
 })

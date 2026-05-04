@@ -4,6 +4,7 @@ import { ActivatedRoute, RouterLink, Router } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { CartService } from '../../services/cart.service';
 import { AuthService } from '../../services/auth.service';
+import { ToastService } from '../../services/toast.service';
 import { BookDetails } from '../../models/book.model';
 import { Observable, switchMap, map, startWith, catchError, of, filter } from 'rxjs';
 
@@ -95,6 +96,7 @@ export class BookDetailComponent {
   private api = inject(ApiService);
   private cartService = inject(CartService);
   private authService = inject(AuthService);
+  private toastService = inject(ToastService);
   
   cart$ = this.cartService.cart$;
   user$ = this.authService.currentUser$; 
@@ -114,18 +116,18 @@ export class BookDetailComponent {
 
   isInCart(bookId: string, cartItems: any[] | null): boolean {
     if (!cartItems) return false;
-    // CRITICAL FIX: Checking item.book.id instead of item.id
     return cartItems.some(item => item.book && item.book.id === bookId);
   }
 
   addToCart(book: any) {
     this.cartService.addToCart(book.id).subscribe({
       next: () => {
-        // We removed the alert here because the UI button visually updating to "✓ Added To Cart" is a much better user experience!
+        // Added the toast notification here!
+        this.toastService.show('Book added to cart!', 'success');
       },
       error: (err) => {
         console.error('Failed to add to cart:', err);
-        alert(err.error?.detail || 'Failed to add item to cart.');
+        this.toastService.show(err.error?.detail || 'Failed to add item to cart.', 'error');
       }
     });
   }
@@ -134,12 +136,12 @@ export class BookDetailComponent {
     if (confirm('Are you sure you want to permanently delete this book from the database? This action cannot be undone.')) {
       this.api.deleteBook(id).subscribe({
         next: () => {
-          alert('Book deleted successfully!');
+          this.toastService.show('Book deleted successfully!', 'success');
           this.router.navigate(['/']);
         },
         error: (err: any) => { 
           console.error(err);
-          alert('Failed to delete book.');
+          this.toastService.show('Failed to delete book.', 'error');
         }
       });
     }

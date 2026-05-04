@@ -1,12 +1,12 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, tap, catchError, of } from 'rxjs';
-import { AuthService } from './auth.service'; // <-- Import AuthService
+import { AuthService } from './auth.service'; 
 
 @Injectable({ providedIn: 'root' })
 export class CartService {
   private http = inject(HttpClient);
-  private authService = inject(AuthService); // <-- Inject it
+  private authService = inject(AuthService); 
   
   private apiUrl = 'http://localhost:8000';
 

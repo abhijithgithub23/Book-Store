@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { ApiService } from '../../services/api.service';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-book-form',
@@ -131,6 +132,7 @@ export class BookFormComponent implements OnInit {
   private api = inject(ApiService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
+  private toastService = inject(ToastService);
 
   isEditMode = false;
   isLoading = false;
@@ -182,12 +184,12 @@ export class BookFormComponent implements OnInit {
 
     request$.subscribe({
       next: (res: any) => {
-        alert(this.isEditMode ? 'Book updated successfully!' : 'Book added successfully!');
+        this.toastService.show(this.isEditMode ? 'Book updated successfully!' : 'Book added successfully!', 'success');
         this.router.navigate(['/book', this.isEditMode ? this.book.id : res.id]);
       },
       error: (err: any) => {
         console.error(err);
-        alert(err.error?.detail || 'An error occurred while saving the book.');
+        this.toastService.show(err.error?.detail || 'An error occurred while saving the book.', 'error');
         this.isLoading = false;
       }
     });

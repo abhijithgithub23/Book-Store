@@ -4,12 +4,14 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { BehaviorSubject, tap, catchError, of, switchMap, throwError, Observable } from 'rxjs';
 import { Router } from '@angular/router';
 import { User, TokenResponse } from '../models/auth.model';
+import { ToastService } from './toast.service';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private http = inject(HttpClient);
   private router = inject(Router);
   private platformId = inject(PLATFORM_ID); 
+  private toastService = inject(ToastService);
   
   private apiUrl = '/api'; 
 
@@ -103,6 +105,7 @@ export class AuthService {
       catchError(() => of(null))
     ).subscribe(() => {
       this.clearState();
+      this.toastService.show('You have been logged out.', 'info');
       this.router.navigate(['/login']);
     });
   }

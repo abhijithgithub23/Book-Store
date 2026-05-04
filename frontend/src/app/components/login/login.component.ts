@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink, Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-login',
@@ -42,14 +43,21 @@ import { AuthService } from '../../services/auth.service';
 export class LoginComponent {
   private authService = inject(AuthService);
   private router = inject(Router);
+  private toastService = inject(ToastService);
   
   formData = { email: '', password: '' };
   errorMessage = '';
 
   onSubmit() {
     this.authService.login(this.formData).subscribe({
-      next: () => this.router.navigate(['/']),
-      error: (err) => this.errorMessage = err.error?.detail || 'Login failed'
+      next: () => {
+        this.toastService.show('Successfully logged in!', 'success');
+        this.router.navigate(['/']);
+      },
+      error: (err) => {
+        this.errorMessage = err.error?.detail || 'Login failed';
+        this.toastService.show(this.errorMessage, 'error');
+      }
     });
   }
 }

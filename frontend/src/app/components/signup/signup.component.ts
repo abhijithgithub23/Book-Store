@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink, Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-signup',
@@ -46,14 +47,21 @@ import { AuthService } from '../../services/auth.service';
 export class SignupComponent {
   private authService = inject(AuthService);
   private router = inject(Router);
+  private toastService = inject(ToastService);
   
   formData = { full_name: '', email: '', password: '' };
   errorMessage = '';
 
   onSubmit() {
     this.authService.signup(this.formData).subscribe({
-      next: () => this.router.navigate(['/login']),
-      error: (err) => this.errorMessage = err.error?.detail || 'Signup failed'
+      next: () => {
+        this.toastService.show('Account created successfully! Please log in.', 'success');
+        this.router.navigate(['/login']);
+      },
+      error: (err) => {
+        this.errorMessage = err.error?.detail || 'Signup failed';
+        this.toastService.show(this.errorMessage, 'error');
+      }
     });
   }
 }

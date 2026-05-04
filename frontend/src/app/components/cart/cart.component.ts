@@ -2,6 +2,7 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { CartService } from '../../services/cart.service';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-cart',
@@ -49,7 +50,7 @@ import { CartService } from '../../services/cart.service';
             <span class="text-lg font-semibold text-gray-700 mb-4 sm:mb-0">
               Total Books: <span class="font-bold text-indigo-600">{{ cartItems.length }}</span>
             </span>
-            <button class="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-10 rounded-lg shadow transition-colors cursor-pointer">
+            <button (click)="checkout()" class="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-10 rounded-lg shadow transition-colors cursor-pointer">
               Checkout
             </button>
           </div>
@@ -60,6 +61,8 @@ import { CartService } from '../../services/cart.service';
 })
 export class CartComponent {
   private cartService = inject(CartService);
+  private toastService = inject(ToastService);
+  
   cart$ = this.cartService.cart$;
 
   removeItem(bookId: string) {
@@ -69,12 +72,17 @@ export class CartComponent {
     this.cartService.removeFromCart(bookId).subscribe({
       next: () => {
         // The service will automatically fetch the new cart list and update the UI
-        console.log('Successfully removed from cart');
+        this.toastService.show('Item removed from cart', 'info');
       },
       error: (err) => {
         console.error('Failed to remove item:', err);
-        alert('Failed to remove item from cart.');
+        this.toastService.show('Failed to remove item from cart.', 'error');
       }
     });
+  }
+
+  checkout() {
+    // A nice UX touch until you wire up a real payment gateway
+    this.toastService.show('Checkout functionality coming soon!', 'info');
   }
 }
