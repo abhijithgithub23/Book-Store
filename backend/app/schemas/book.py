@@ -25,7 +25,7 @@ class BookCreate(BaseModel):
     cover_url: Optional[str] = None
     description: Optional[str] = None
     author_bio: Optional[str] = None
-    subjects: Optional[List[str]] = [] # <--- FIXED: Strictly enforce this is a List
+    subjects: Optional[List[str]] = [] 
 
     @field_validator('publish_year')
     @classmethod
@@ -34,11 +34,20 @@ class BookCreate(BaseModel):
             raise ValueError("Publish year must be a valid year between 1000 and 2100")
         return v
 
+
+
+class BookListItem(BaseModel):
+    id: str  
+    title: str
+    author_name: str
+    cover_url: str
+    publish_year: str 
+
+    class Config:
+        from_attributes = True 
+
 class PaginatedBooksResponse(BaseModel):
     total: int
     page: int
     size: int
-    items: List[BookSchema]
-    
-    class Config:
-        from_attributes = True
+    items: List[BookListItem] 

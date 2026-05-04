@@ -33,3 +33,6 @@ def remove_from_cart(book_id: str, current_user: User = Depends(get_current_user
     db.delete(cart_item)
     db.commit()
     return {"message": "Removed from cart successfully"}
+
+
+
