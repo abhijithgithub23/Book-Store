@@ -56,7 +56,7 @@ export class SignupComponent {
     this.authService.signup(this.formData).subscribe({
       next: () => {
         this.toastService.show('Account created successfully! Please log in.', 'success');
-        this.router.navigate(['/login']);
+        this.router.navigate(['/']);
       },
       error: (err) => {
         this.errorMessage = err.error?.detail || 'Signup failed';

@@ -11,18 +11,36 @@ from app.schemas.user import UserCreate, UserResponse
 
 router = APIRouter()
 
-@router.post("/signup", response_model=UserResponse)
-def create_user(user: UserCreate, db: Session = Depends(get_db)):
+@router.post("/signup")
+def create_user(user: UserCreate, response: Response, db: Session = Depends(get_db)):
+    # 1. Check if user exists
     db_user = db.query(User).filter(User.email == user.email).first()
     if db_user:
         raise HTTPException(status_code=400, detail="Email already registered")
     
+    # 2. Create the user
     hashed_password = get_password_hash(user.password)
     new_user = User(email=user.email, hashed_password=hashed_password, full_name=user.full_name)
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-    return new_user
+    
+    # 3. Auto-Login: Generate tokens immediately after creation
+    access_token = create_access_token(data={"sub": new_user.email})
+    refresh_token = create_refresh_token(data={"sub": new_user.email})
+    
+    # 4. Set the refresh token cookie
+    response.set_cookie(
+        key="refresh_token", value=refresh_token, httponly=True, secure=False, samesite="lax",
+        max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60, path="/"
+    )
+    
+    # 5. Return both the access token (so the frontend can log them in) and the user data
+    return {
+        "access_token": access_token, 
+        "token_type": "bearer",
+        "user": new_user
+    }
 
 @router.post("/login", response_model=Token)
 def login_for_access_token(response: Response, form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):

@@ -96,7 +96,6 @@ export class NavbarComponent {
     }
   }
 
-  // UPDATED: Now uses the custom Confirm Modal
   async logout() {
     const confirmed = await this.confirmService.confirm(
       'Log Out', 

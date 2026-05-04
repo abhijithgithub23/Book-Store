@@ -69,7 +69,18 @@ export class AuthService {
   }
 
   signup(userData: any) {
-    return this.http.post<User>(`${this.apiUrl}/signup`, userData);
+    // We expect { access_token, token_type, user } from the backend now
+    return this.http.post<{ access_token: string, token_type: string, user: User }>(
+      `${this.apiUrl}/signup`, 
+      userData,
+      { withCredentials: true } // CRITICAL: Ensures the browser saves the refresh_token cookie
+    ).pipe(
+      tap((res) => {
+        // Auto-login the user in the frontend state
+        this.accessToken = res.access_token;
+        this.currentUserSubject.next(res.user);
+      })
+    );
   }
 
   login(credentials: any) {
