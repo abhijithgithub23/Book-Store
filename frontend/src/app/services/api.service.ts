@@ -25,7 +25,6 @@ export class ApiService {
     };
   }
 
-  // Helper to map frontend camelCase back to database snake_case for Admin updates
   private mapToDbBook(book: any) {
     return {
       id: book.id,
@@ -36,7 +35,8 @@ export class ApiService {
       description: book.description,
       author_name: book.author,
       author_bio: book.authorBio,
-      subjects: typeof book.subjects === 'string' ? book.subjects.split(',').map((s: string) => s.trim()) : book.subjects
+      // <--- FIXED: Ensure it stays an array, do not split it again!
+      subjects: Array.isArray(book.subjects) ? book.subjects : [] 
     };
   }
 

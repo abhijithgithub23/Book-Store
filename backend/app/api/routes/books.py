@@ -1,4 +1,4 @@
-import uuid  # <--- Import UUID library
+import uuid
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, desc
@@ -37,24 +37,17 @@ def get_book_details(book_id: str, db: Session = Depends(get_db)):
 def create_book(book: BookCreate, admin: User = Depends(get_admin_user), db: Session = Depends(get_db)):
     book_data = book.model_dump()
     
-    # 1. Safely flatten the subjects array [""] into a clean string
-    subjects_val = book_data.get("subjects")
-    if isinstance(subjects_val, list):
-        subjects_str = ", ".join(filter(None, subjects_val))
-    else:
-        subjects_str = subjects_val or ""
-
-    # 2. Map directly to database columns
+    # Map directly to database columns, passing the list EXACTLY as it is
     db_book_data = {
         "id": book_data.get("id") or str(uuid.uuid4()),
         "title": book_data["title"],
         "author_name": book_data["author_name"], 
         "genre": book_data["genre"],
-        "publish_year": book_data["publish_year"],
+        "publish_year": str(book_data["publish_year"]),
         "cover_url": book_data.get("cover_url"),
         "description": book_data.get("description"),
         "author_bio": book_data.get("author_bio"),
-        "subjects": subjects_str
+        "subjects": book_data.get("subjects") or []  # <--- FIXED: Passes the raw list to Postgres
     }
         
     if db.query(Book).filter(Book.id == db_book_data["id"]).first():
@@ -73,26 +66,19 @@ def update_book(book_id: str, book_update: BookCreate, admin: User = Depends(get
         raise HTTPException(status_code=404, detail="Book not found")
     
     book_data = book_update.model_dump()
-    
-    subjects_val = book_data.get("subjects")
-    if isinstance(subjects_val, list):
-        subjects_str = ", ".join(filter(None, subjects_val))
-    else:
-        subjects_str = subjects_val or ""
 
     db_book.title = book_data["title"]
     db_book.author_name = book_data["author_name"]
     db_book.genre = book_data["genre"]
-    db_book.publish_year = book_data["publish_year"]
+    db_book.publish_year = str(book_data["publish_year"])
     db_book.cover_url = book_data.get("cover_url")
     db_book.description = book_data.get("description")
     db_book.author_bio = book_data.get("author_bio")
-    db_book.subjects = subjects_str
+    db_book.subjects = book_data.get("subjects") or []  # <--- FIXED: Passes the raw list to Postgres
         
     db.commit()
     db.refresh(db_book)
     return db_book
-
 
 @router.delete("/books/{book_id}")
 def delete_book(book_id: str, admin: User = Depends(get_admin_user), db: Session = Depends(get_db)):
