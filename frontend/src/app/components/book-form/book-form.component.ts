@@ -61,7 +61,6 @@ import { ToastService } from '../../services/toast.service';
                 <option value="science_fiction">Science Fiction</option>
                 <option value="thriller">Thriller</option>
                 <option value="mystery">Mystery</option>
-                <option value="popular">Popular (General)</option>
               </select>
               <div *ngIf="genre.invalid && (genre.dirty || genre.touched)" class="text-red-500 text-xs mt-1">
                 Genre is required.
