@@ -15,10 +15,11 @@ router = APIRouter()
 def get_books(genre: str = None, q: str = None, page: int = 1, size: int = 20, db: Session = Depends(get_db)):
     query = db.query(Book)
     
-    if genre and genre.lower() != 'popular':
-        query = query.filter(Book.genre.ilike(f"%{genre}%"))
     if q:
         query = query.filter(or_(Book.title.ilike(f"%{q}%"), Book.author_name.ilike(f"%{q}%")))
+        
+    elif genre and genre.lower() != 'popular':
+        query = query.filter(Book.genre.ilike(f"%{genre}%"))
         
     query = query.order_by(desc(Book.publish_year))
     

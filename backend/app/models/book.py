@@ -5,7 +5,10 @@ import enum
 from sqlalchemy import Column, String, Text, Enum
 from sqlalchemy.dialects.postgresql import ARRAY 
 
-# 1. Define your Enum
+from sqlalchemy import Column, String, Text, Integer, Enum 
+from sqlalchemy.dialects.postgresql import ARRAY 
+import enum
+
 class GenreEnum(str, enum.Enum):
     fiction = "fiction"
     fantasy = "fantasy"
@@ -14,14 +17,15 @@ class GenreEnum(str, enum.Enum):
     thriller = "thriller"
     mystery = "mystery"
     
-
 class Book(Base):
     __tablename__ = "books"
     
     id = Column(String(100), primary_key=True, index=True)
     title = Column(String(255), nullable=False)
     genre = Column(Enum(GenreEnum), nullable=False) 
-    publish_year = Column(String(20), nullable=False)
+    
+    publish_year = Column(Integer, nullable=False) 
+    
     cover_url = Column(Text)
     description = Column(Text, nullable=False)
     author_name = Column(String(255), nullable=False)

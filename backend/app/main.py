@@ -26,3 +26,4 @@ app.include_router(auth.router, tags=["Auth"])
 app.include_router(users.router, tags=["Users"])
 app.include_router(books.router, tags=["Books"])
 app.include_router(cart.router, tags=["Cart"])
+
