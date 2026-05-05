@@ -14,7 +14,6 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideRouter(routes),
     
-    // THE FIX: Removed withFetch(). Falling back to stable XHR for cookies!
     provideHttpClient(withInterceptors([authInterceptor])),
     
     {

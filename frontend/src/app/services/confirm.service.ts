@@ -18,7 +18,6 @@ export class ConfirmService {
   
   state$ = this.state.asObservable();
 
-  // Returns a promise that resolves to true (confirmed) or false (cancelled)
   confirm(title: string, message: string, confirmText = 'Confirm', cancelText = 'Cancel'): Promise<boolean> {
     return new Promise((resolve) => {
       this.state.next({

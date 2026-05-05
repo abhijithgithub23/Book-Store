@@ -13,10 +13,8 @@ router = APIRouter()
 
 @router.get("/books", response_model=PaginatedBooksResponse)
 def get_books(genre: str = None, q: str = None, page: int = 1, size: int = 20, db: Session = Depends(get_db)):
-    # 1. Start the base query WITHOUT with_entities
     query = db.query(Book)
     
-    # 2. Apply your filters
     if genre and genre.lower() != 'popular':
         query = query.filter(Book.genre.ilike(f"%{genre}%"))
     if q:
@@ -24,10 +22,8 @@ def get_books(genre: str = None, q: str = None, page: int = 1, size: int = 20, d
         
     query = query.order_by(desc(Book.publish_year))
     
-    # 3. Get the count BEFORE limiting or specifying entities
     total_books = query.count()
     
-    # 4. NOW apply with_entities, offset, and limit
     offset = (page - 1) * size
     books_rows = query.with_entities(
         Book.id,
@@ -37,7 +33,6 @@ def get_books(genre: str = None, q: str = None, page: int = 1, size: int = 20, d
         Book.publish_year
     ).offset(offset).limit(size).all()
     
-    # 5. Safely convert the SQLAlchemy Rows into dictionaries for FastAPI/Pydantic
     books_data = [dict(row._mapping) for row in books_rows] 
     
     return {"total": total_books, "page": page, "size": size, "items": books_data}

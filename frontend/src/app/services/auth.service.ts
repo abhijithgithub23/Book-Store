@@ -23,19 +23,19 @@ export class AuthService {
   isInitialized$ = this.isInitialized.asObservable();
 
   constructor() {
-    console.log('[AUTH TRACER] 1. AuthService Constructor Fired!');
+    // console.log('[AUTH TRACER] 1. AuthService Constructor Fired!');
     
     if (isPlatformBrowser(this.platformId)) {
-      console.log('[AUTH TRACER] 2. Running in Browser! Booting session...');
+      // console.log('[AUTH TRACER] 2. Running in Browser! Booting session...');
       this.bootUpSession();
     } else {
-      console.log('[AUTH TRACER] 2. Running on Node Server (SSR). Skipping network call.');
+      // console.log('[AUTH TRACER] 2. Running on Node Server (SSR). Skipping network call.');
       this.isInitialized.next(true);
     }
   }
 
   private bootUpSession() {
-    console.log('[AUTH TRACER] 3. Sending POST request to /api/refresh...');
+    // console.log('[AUTH TRACER] 3. Sending POST request to /api/refresh...');
     
     this.http.post<TokenResponse>(`${this.apiUrl}/refresh`, {}, { withCredentials: true }).pipe(
       catchError((error) => {
@@ -46,14 +46,14 @@ export class AuthService {
       })
     ).subscribe({
       next: (res) => {
-        console.log('[AUTH TRACER] 4. /refresh call SUCCESS! We got a token.');
+        // console.log('[AUTH TRACER] 4. /refresh call SUCCESS! We got a token.');
         this.accessToken = res.access_token;
         this.isInitialized.next(true); 
 
-        console.log('[AUTH TRACER] 5. Fetching user profile...');
+        // console.log('[AUTH TRACER] 5. Fetching user profile...');
         this.http.get<User>(`${this.apiUrl}/profile`).subscribe({
           next: (user) => {
-             console.log('[AUTH TRACER] 6. Profile loaded successfully!');
+            //  console.log('[AUTH TRACER] 6. Profile loaded successfully!');
             this.currentUserSubject.next(user);
           },
           error: (profileErr) => {
@@ -63,7 +63,7 @@ export class AuthService {
         });
       },
       error: (err) => {
-        console.log('[AUTH TRACER] Boot up finished with no active session');
+        // console.log('[AUTH TRACER] Boot up finished with no active session');
       }
     });
   }

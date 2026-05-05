@@ -35,7 +35,6 @@ export class ApiService {
       description: book.description,
       author_name: book.author,
       author_bio: book.authorBio,
-      // <--- FIXED: Ensure it stays an array, do not split it again!
       subjects: Array.isArray(book.subjects) ? book.subjects : [] 
     };
   }
